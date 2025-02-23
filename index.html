@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مواقيت الصلاة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            direction: rtl;
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        #times {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            width: 90%;
+        }
+        #nextPrayer {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffeb3b;
+            margin-top: 15px;
+        }
+        button {
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #e68900;
+        }
+        footer {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🕌 مواقيت الصلاة حسب موقعك</h2>
+    <p id="currentDate"></p>
+    <button onclick="getPrayerTimes()">🔄 تحديث المواقيت</button>
+    <div id="times"></div>
+    <p id="nextPrayer"></p>
+
+    <footer>
+        <p>جميع الحقوق محفوظة - نبراس المسلم &copy; 2025</p>
+    </footer>
+
+    <script>
+        function getPrayerTimes() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(success, error);
+            } else {
+                alert("المتصفح لا يدعم تحديد الموقع الجغرافي.");
+            }
+        }
+
+        function success(position) {
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+            let url = https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=2;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let timings = data.data.timings;
+                    let today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    document.getElementById("currentDate").innerHTML = 📅 التاريخ: ${today};
+                    displayPrayerTimes(timings);
+                })
+                .catch(() => alert("⚠️ خطأ في جلب المواقيت!"));
+        }
+
+        function error() {
+            alert("⚠️ فشل في تحديد الموقع. يرجى تمكين خدمات الموقع.");
+        }
+
+        function displayPrayerTimes(timings) {
+            let output = 
+                <h3>📅 مواقيت اليوم</h3>
+                <p>الفجر: ${timings.Fajr} 🌙</p>
+                <p>الشروق: ${timings.Sunrise} ☀️</p>
+                <p>الظهر: ${timings.Dhuhr} 🕛</p>
+                <p>العصر: ${timings.Asr} ⛅</p>
+                <p>المغرب: ${timings.Maghrib} 🌅</p>
+                <p>العشاء: ${timings.Isha} 🌌</p>
+            ;
+            document.getElementById("times").innerHTML = output;
+
+            updateNextPrayerCountdown(timings);
+            setInterval(() => updateNextPrayerCountdown(timings), 60000);
+        }
+
+        function updateNextPrayerCountdown(timings) {
+            let prayerTimes = {
+                "الفجر": timings.Fajr,
+                "الظهر": timings.Dhuhr,
+                "العصر": timings.Asr,
+                "المغرب": timings.Maghrib,
+                "العشاء": timings.Isha
+            };
+
+            let now = new Date();
+            let currentMinutes = now.getHours() * 60 + now.getMinutes();
+            let nextPrayer = null;
+            let nextPrayerTime = null;
+
+Mrtchouper, [2/23/2025 2:58 AM]
+for (let prayer in prayerTimes) {
+                let [hour, minute] = prayerTimes[prayer].split(":").map(Number);
+                let prayerMinutes = hour * 60 + minute;
+                
+                if (prayerMinutes > currentMinutes) {
+                    nextPrayer = prayer;
+                    nextPrayerTime = prayerMinutes - currentMinutes;
+                    break;
+                }
+            }
+
+            if (!nextPrayer) { // إذا انتهت كل الصلوات، فالصلاة التالية هي الفجر غدًا
+                let [hour, minute] = timings.Fajr.split(":").map(Number);
+                nextPrayer = "الفجر";
+                nextPrayerTime = (24 * 60 - currentMinutes) + (hour * 60 + minute);
+            }
+
+            let hoursRemaining = Math.floor(nextPrayerTime / 60);
+            let minutesRemaining = nextPrayerTime % 60;
+
+            document.getElementById("nextPrayer").innerHTML = 
+                🕌 الصلاة التالية: ${nextPrayer} بعد ${hoursRemaining} ساعة و ${minutesRemaining} دقيقة ⏳;
+        }
+
+        window.onload = getPrayerTimes;
+    </script>
+
+</body>
+</html>
